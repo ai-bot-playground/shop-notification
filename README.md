@@ -41,3 +41,28 @@ wystarczy mniej instancji niż partycji — to normalne.
 `SPRING_DATASOURCE_URL=.../notification_db`,
 `SPRING_KAFKA_BOOTSTRAP_SERVERS=shop-kafka:9092`,
 `SPRING_KAFKA_CONSUMER_GROUP_ID=shop-notification`.
+
+## High Level Design (ogólny workflow)
+
+Liść grafu: konsumuje terminalne zdarzenia zamówienia z `order-events`,
+idempotentnie wysyła powiadomienie (log/MailHog), nic nie publikuje.
+
+```mermaid
+flowchart LR
+    OE[["order-events"]] -->|"OrderConfirmed/Cancelled/Rejected"| NOT["shop-notification (consumer)"]
+    NOT --> DB[("Postgres notification_db: sent_notifications")]
+    NOT --> CH["kanał: log / MailHog"]
+```
+
+## Low Level Design (diagram aktywności)
+
+```mermaid
+flowchart TD
+    A(["Order* event"]) --> B{"event_id w sent_notifications?"}
+    B -- tak --> Z(["pomiń (idempotencja)"])
+    B -- nie --> C["wybierz szablon wg typu zdarzenia"]
+    C --> D["wyrenderuj treść"]
+    D --> E["wyślij kanałem (log/MailHog)"]
+    E --> F["zapisz event_id jako wysłany"]
+    F --> Z2(["ack"])
+```
