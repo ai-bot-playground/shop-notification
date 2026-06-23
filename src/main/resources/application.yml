@@ -1,6 +1,23 @@
 spring:
   application:
     name: shop-notification
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+  flyway:
+    enabled: true
+  kafka:
+    consumer:
+      group-id: ${SPRING_KAFKA_CONSUMER_GROUP_ID:shop-notification}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+shop:
+  notification:
+    order-events-topic: order-events
+
 management:
   endpoints:
     web:
